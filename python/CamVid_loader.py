@@ -5,16 +5,17 @@ from __future__ import print_function
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
-import scipy.misc
+import cv2
 import random
 import os
+from PIL import Image
 
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import utils
 
 
-root_dir   = "CamVid/"
+root_dir   = "../CamVid/"
 train_file = os.path.join(root_dir, "train.csv")
 val_file   = os.path.join(root_dir, "val.csv")
 
@@ -41,19 +42,20 @@ class CamVidDataset(Dataset):
             self.new_w = train_w
         elif phase == 'val':
             self.flip_rate = 0.
-            self.crop = False
+            # self.crop = False
             self.new_h = val_h
             self.new_w = val_w
-
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        img_name   = self.data.ix[idx, 0]
-        img        = scipy.misc.imread(img_name, mode='RGB')
-        label_name = self.data.ix[idx, 1]
-        label      = np.load(label_name)
+        img_name = self.data.iloc[idx, 0]
+        img = cv2.imread(img_name)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        label_name = self.data.iloc[idx, 1]
+        label = np.load(label_name)
 
         if self.crop:
             h, w, _ = img.shape
@@ -78,12 +80,15 @@ class CamVidDataset(Dataset):
         label = torch.from_numpy(label.copy()).long()
 
         # create one-hot encoding
-        h, w = label.size()
+        h, w = label.shape[:2]
+
+        label = label.unsqueeze(0)  # add an extra dimension for classes
+
         target = torch.zeros(self.n_class, h, w)
         for c in range(self.n_class):
-            target[c][label == c] = 1
+            target[c][label[0] == c] = 1
 
-        sample = {'X': img, 'Y': target, 'l': label}
+        sample = {'X': img, 'Y': target, 'l': label.squeeze()}
 
         return sample
 

@@ -8,15 +8,17 @@ import numpy as np
 import scipy.misc
 import random
 import os
+import pandas as pd
+import cv2
 
 
 #############################
     # global variables #
 #############################
-root_dir          = "CamVid/"
+root_dir          = "../CamVid/"
 data_dir          = os.path.join(root_dir, "701_StillsRaw_full")    # train data
 label_dir         = os.path.join(root_dir, "LabeledApproved_full")  # train label
-label_colors_file = os.path.join(root_dir, "label_colors.txt")      # color to label
+label_colors_file = os.path.join(root_dir, "class_dict.csv")      # color to label
 val_label_file    = os.path.join(root_dir, "val.csv")               # validation file
 train_label_file  = os.path.join(root_dir, "train.csv")             # train file
 
@@ -121,6 +123,80 @@ def parse_label():
         assert color2label[tuple(color)] == test_ans[idx]
 
 
+def create_data_index(data_type='train'):
+    """
+    :param data_type:
+    :return:
+    """
+    print("Create %s data index" % (data_type))
+    data_path = os.path.join(root_dir, data_type)
+    data_label_path = os.path.join(root_dir, data_type + "_labels")
+    data_list = os.listdir(data_path)
+
+    save_path = os.path.join(root_dir, data_type + ".csv")
+
+    v = open(save_path, "w")
+    v.write("img,label\n")
+    for idx, name in enumerate(data_list):
+        if 'png' not in name:
+            continue
+        img_name = os.path.join(data_path, name)
+        lab_name = os.path.join(data_label_path, name.split(".")[0] + "_L.npy")
+        v.write("{},{}\n".format(img_name, lab_name))
+
+
+def parse_label_from_csv(label_rgb_dir: str):
+    """
+    :return:
+    label_rgb_dir
+    """
+    df = pd.read_csv(label_colors_file)
+
+    for idx, row in df.iterrows():
+        label = row['name']
+        r = row['r']
+        g = row['g']
+        b = row['b']
+        color = (r, g, b)
+
+        print(idx, label, color)
+
+        label2color[label] = color
+        color2label[color] = label
+
+        label2index[label] = idx
+        index2label[idx] = label
+
+    label_rgb_path = os.path.join(root_dir, label_rgb_dir)
+    label_path = os.path.join(root_dir, label_rgb_dir.replace("_rgb", ""))
+    if not os.path.exists(label_path):
+        os.makedirs(label_path)
+
+    rgb_files = os.listdir(label_rgb_path)
+    total = len(rgb_files)
+    for idx, file in enumerate(rgb_files):
+        rgb_file_path = os.path.join(label_rgb_path, file)
+        file_path = os.path.join(label_path, file.split(".")[0] + ".npy")
+
+        img = cv2.imread(rgb_file_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        height, weight = img.shape[:2]
+
+        idx_mat = np.zeros((height, weight))
+        for h in range(height):
+            for w in range(weight):
+                color = tuple(img[h, w])
+                try:
+                    label = color2label[color]
+                    index = label2index[label]
+                    idx_mat[h, w] = index
+                except:
+                    print("error: img:%s, h:%d, w:%d" % (file_path, h, w))
+        idx_mat = idx_mat.astype(np.uint8)
+        np.save(file_path, idx_mat)
+        print("Finish %s, %d/%d" % (file_path, idx, total))
+
+
 '''debug function'''
 def imshow(img, title=None):
     try:
@@ -136,5 +212,14 @@ def imshow(img, title=None):
 
 
 if __name__ == '__main__':
-    divide_train_val(random_seed=1)
-    parse_label()
+    # 标签处理
+    # parse_label_from_csv("test_labels_rgb")
+    # parse_label_from_csv("train_labels_rgb")
+    # parse_label_from_csv("val_labels_rgb")
+
+    # 数据的csv表示
+    create_data_index('train')
+    create_data_index('val')
+    create_data_index('test')
+
+    pass

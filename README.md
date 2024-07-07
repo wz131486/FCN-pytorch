@@ -25,16 +25,33 @@ I train with two popular benchmark dataset: CamVid and Cityscapes
 
 ## Training
 
-### Install packages
+### Environment
 ```bash
-pip3 install -r requirements.txt
+# Install python3
+conda create -n fcn python=3.9
+
+# To activate this environment
+conda activate fcn
+
+# Install dep
+conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+
 ```
 
 and download pytorch 0.2.0 from [pytorch.org](pytorch.org)
 
 and download [CamVid](http://mi.eng.cam.ac.uk/research/projects/VideoRec/CamVid/) dataset (recommended) or [Cityscapes](https://www.cityscapes-dataset.com/) dataset
 
+### CamVid 下载
+
+https://tianchi.aliyun.com/dataset/128347?t=1720103543115
+
+### Cityscapes 下载
+
+https://tianchi.aliyun.com/dataset/91542?spm=a2c22.28136470.0.0.448e4a0azc0Kkg&from=search-list
+
 ### Run the code
+
 - default dataset is CamVid
 
 create a directory named "CamVid", and put data into it, then run python codes:

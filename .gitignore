@@ -3,3 +3,6 @@
 **/__pycache__
 CamVid/
 Cityscapes
+.idea/
+models/
+scores/
